@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python versions
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Step 3: Cache pip dependencies
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Step 4: Set up and activate virtual environment (store activation command as output)
+      - name: Set up and activate virtual environment
+        id: activate-venv
+        run: |
+          python -m venv venv
+          echo "activate_venv=source venv/bin/activate" >> $GITHUB_ENV  # Store the activation command as output for later reuse
+        shell: bash
+
+      # Step 5: Install dependencies (including maturin and project dependencies)
+      - name: Install dependencies
+        run: |
+          ${{ env.activate_venv }}  # Use stored activation command
+          pip install --upgrade pip
+          pip install maturin
+          pip install -r requirements.txt
+        shell: bash
+
+      # Step 6: Run Ruff linter and fail on any issues
+      - name: Run Ruff (Python linter)
+        run: |
+          ${{ env.activate_venv }}  # Use stored activation command
+          ruff check .
+        shell: bash
+
+      # Step 7: Run Black formatter
+      - name: Run Black (Python formatter)
+        run: |
+          ${{ env.activate_venv }}  # Use stored activation command
+          black --check .
+        shell: bash
+
+      # Step 8: Build and install the Rust library using Maturin (in release mode)
+      - name: Build and install Rust library (release mode)
+        run: |
+          ${{ env.activate_venv }}  # Use stored activation command
+          maturin develop --release  # Build the Rust library and install it
+        shell: bash
+
+      # Step 9: Run Python tests with pytest
+      - name: Run Python tests with pytest
+        run: |
+          ${{ env.activate_venv }}  # Use stored activation command
+          pytest tests/  # Run tests
+        shell: bash
+
+  # Separate job for deploying the documentation
+  deploy:
+    runs-on: ubuntu-latest
+    needs: linux  # Ensure this job only runs after the matrix job completes
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'  # Just need a single Python version to build docs
+
+      # Step 3: Set up and activate virtual environment for Sphinx (store activation command as output)
+      - name: Set up and activate virtual environment
+        id: activate-venv
+        run: |
+          python -m venv venv
+          echo "activate_venv=source venv/bin/activate" >> $GITHUB_ENV  # Store the activation command as output for later reuse
+        shell: bash
+
+      # Step 4: Install dependencies for docs
+      - name: Install dependencies for docs
+        run: |
+          ${{ env.activate_venv }}  # Use stored activation command
+          pip install --upgrade pip
+          pip install -r requirements.txt
+        shell: bash
+
+      # Step 5: Build Sphinx documentation
+      - name: Build Sphinx documentation
+        run: |
+          ${{ env.activate_venv }}  # Use stored activation command
+          cd docs
+          make html
+        shell: bash
+
+      # Step 6: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/_build/html

@@ -1,0 +1,10 @@
+pytest>=6.0  # For running Python tests
+black>=23.0  # For Python code formatting
+ruff>=0.0.241  # For Python linting and import sorting
+sphinx>=5.0  # For building documentation
+sphinx-rtd-theme>=1.0  # For the Sphinx Read the Docs theme
+
+# Add any project-specific dependencies here
+# For example:
+numpy>=1.20  # Example of a project dependency
+pandas>=1.3  # Example of a project dependency

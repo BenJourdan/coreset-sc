@@ -1,0 +1,23 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "coreset-sc"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dynamic = ["version"]
+[tool.maturin]
+features = ["pyo3/extension-module"]
+
+
+[tool.ruff]
+line-length = 88  # Match Black's default line length
+lint.select = ["E", "F", "I", "A"]  # Choose what linting categories to apply
+lint.ignore = ["E501"]  # Ignore specific rules, e.g., E501 (line too long)
+lint.fixable = ["F401", "I"]  # Define fixable errors like unused imports and import sorting
+lint.per-file-ignores = { "docs/conf.py" = ["A001"] }
