@@ -21,3 +21,12 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-added-large-files
+
+    # Rustfmt for Rust code formatting
+  - repo: local
+    hooks:
+      - id: clippy
+        name: Run Clippy
+        entry: bash -c 'cargo clippy -- -D warnings'
+        language: system
+        types: [rust]

@@ -8,6 +8,11 @@ edition = "2021"
 name = "coreset_sc"
 crate-type = ["cdylib"]
 
+[features]
+default = []
+bindings = ["pyo3"]
+
+
 [dependencies]
 clap = "4.5.20"
-pyo3 = "0.22.0"
+pyo3 = {version = "0.22.4", optional = true, features = ["extension-module"]}
