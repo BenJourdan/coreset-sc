@@ -6,13 +6,49 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "coreset_sc"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
 
-[features]
-default = []
-bindings = ["pyo3"]
+
+
+# [features]
+# default = []
+# bindings = ["pyo3"]
 
 
 [dependencies]
-clap = "4.5.20"
-pyo3 = {version = "0.22.4", optional = true, features = ["extension-module"]}
+ndarray = "0.16.1"
+rand =  "0.8.5"
+pyo3 = {version = "0.22.6", features = ["extension-module"]}
+faer = { version = "0.19.4", features = ["rayon"] }
+numpy = "0.22.1"
+
+sampling-tree = {path="../sampling-tree"}
+rand_distr = "0.4.3"
+criterion = "0.5.1"
+rayon = "1.10.0"
+
+
+faer-ext = { version = "0.3.0", features = ["ndarray"] }
+ndarray-rand = "0.15.0"
+
+
+[workspace]
+resolver = "2"
+
+[profile.dev]
+incremental = true
+
+
+
+[profile.release]
+debug = true
+
+
+
+
+
+[[bench]]
+name = "sbm"
+harness = false
+required-features = ["bindings"]

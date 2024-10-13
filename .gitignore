@@ -26,3 +26,10 @@ __pycache__/
 tests/__pycache__/*
 *.py[cod]
 *.pyc
+*.so
+
+
+# results:
+*.png
+!csc.png
+*.json
