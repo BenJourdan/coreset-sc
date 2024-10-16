@@ -13,7 +13,9 @@ classifiers = [
 dynamic = ["version"]
 [tool.maturin]
 features = ["pyo3/extension-module", "bindings"]
-
+python-source = "python"
+# build with release optimizations
+release = true
 
 
 [tool.ruff]
