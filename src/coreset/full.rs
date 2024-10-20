@@ -118,6 +118,11 @@ impl <'a,T> DefaultCoresetSampler<'a,T>
             coreset_weights.push(weight.0/(prob*self.coreset_size as Float));
         }
 
+        // sort the indices and weights in ascending order of indices
+        let mut combined: Vec<_> = coreset_indices.iter_mut().zip(coreset_weights.iter_mut()).collect();
+        combined.sort_by(|a,b| a.0.cmp(&b.0));
+
+
         Ok((coreset_indices,coreset_weights))
     }
 

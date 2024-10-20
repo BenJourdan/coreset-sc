@@ -35,10 +35,28 @@ use numpy::{IntoPyArray, PyReadonlyArray1};
 use ndarray::ArrayView1;
 #[cfg(feature = "bindings")]
 use faer::mat::from_raw_parts;
+use faer::mat::MatRef;
+use faer::sparse::SparseRowMatRef;
+use crate::coreset::common::Float;
 
 
-
-
+pub fn construct_from_py<'py>(
+    n: usize,
+    data: &'py PyReadonlyArray1<f64>,
+    indices: &'py PyReadonlyArray1<usize>,
+    indptr: &'py PyReadonlyArray1<usize>,
+    nnz_per_row: &'py PyReadonlyArray1<usize>,
+    degrees: &'py PyReadonlyArray1<f64>,
+) -> (SparseRowMatRef<'py, usize, Float>, MatRef<'py,Float>){
+    let adj_mat_faer: SparseRowMatRef< usize,Float> = data_indices_indptr_to_sparse_mat_ref(n,
+        data.as_slice().unwrap(),
+        indices.as_slice().unwrap(),
+        indptr.as_slice().unwrap(),
+        nnz_per_row.as_slice().unwrap());
+    let degrees_numpy: ArrayView1<f64> = degrees.as_array();
+    let degrees_faer: MatRef<Float> = unsafe{from_raw_parts::<f64>(degrees_numpy.as_ptr(), 1,n,1,1)};
+    (adj_mat_faer, degrees_faer)
+}
 
 
 // Python bindings: conditionally included if the "bindings" feature is enabled
@@ -64,19 +82,31 @@ fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
         degrees: PyReadonlyArray1<'py, f64>,
     ) -> Bound<'py, PyTuple>{
 
-        let data_slice: &[f64] = data.as_slice().unwrap();
-        let indices_slice: &[usize] = indices.as_slice().unwrap();
-        let indptr_slice: &[usize] = indptr.as_slice().unwrap();
-        let nnz_per_row_slice: &[usize] = nnz_per_row.as_slice().unwrap();
-        let adj_mat_faer = data_indices_indptr_to_sparse_mat_ref(n, data_slice, indices_slice, indptr_slice, nnz_per_row_slice);
-        let degrees_numpy: ArrayView1<f64> = degrees.as_array();
-        let degrees_faer = unsafe{from_raw_parts::<f64>(degrees_numpy.as_ptr(), 1,n,1,1)};
+
+        let (adj_mat_faer, degrees_faer) = construct_from_py(n, &data, &indices, &indptr, &nnz_per_row, &degrees);
+
         let (indices, weights) = default_coreset_sampler(adj_mat_faer, degrees_faer, clusters, coreset_size, StdRng::from_entropy()).unwrap();
         let indices_py = indices.into_pyarray_bound(py);
         let weights_py = weights.into_pyarray_bound(py);
         let tuple = PyTuple::new_bound(py, &[indices_py.to_object(py),weights_py.to_object(py)]);
         tuple
     }
+
+    // #[pyfn(m)]
+    // #[pyo3(name = "default_csc")]
+    // fn default_csc_py<'py>(
+    //     py: Python<'py>,
+    //     coreset_indices: PyReadonlyArray1<'py, usize>,
+    //     coreset_weights: PyReadonlyArray1<'py, f64>,
+    //     indices: PyReadonlyArray1<'py, usize>,
+    //     indptr: PyReadonlyArray1<'py, usize>,
+    //     nnz_per_row: PyReadonlyArray1<'py, usize>,
+    //     degrees: PyReadonlyArray1<'py, f64>,
+    // ){
+
+    //     let (adj_mat_faer, degrees_faer) = construct_from_py(coreset_indices.len(), &coreset_weights, &indices, &indptr, &nnz_per_row, &degrees);
+
+    // }
 
 
     Ok(())

@@ -20,6 +20,5 @@ faer = "0.19.4"
 numpy = "0.22.0"
 ndarray = "0.16.1"
 
-
 [profile.dev]
 incremental = true
