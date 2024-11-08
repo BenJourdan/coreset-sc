@@ -12,8 +12,12 @@ classifiers = [
 ]
 dynamic = ["version"]
 [tool.maturin]
-features = ["pyo3/extension-module", "bindings"]
-
+cargo-extra-args = ["--quiet"]
+features = ["pyo3/extension-module"]
+python-source = "python"
+# build with release optimizations
+release = true
+strip = false
 
 
 [tool.ruff]
