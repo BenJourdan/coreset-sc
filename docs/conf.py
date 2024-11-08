@@ -2,7 +2,8 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("../python"))
+print(sys.path)
 
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -20,12 +21,15 @@ release = "0.01"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",
+    "sphinx.ext.autodoc",  # Auto-generate documentation from docstrings
+    "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
+    "sphinx.ext.viewcode",  # Link to source code
+    "sphinx.ext.todo",  # Support for TODOs in your documentation
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-
+autodoc_mock_imports = ["sklearn"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
