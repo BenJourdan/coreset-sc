@@ -11,6 +11,9 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
+dependencies = [ "numpy>=1.20", "scikit-learn>=1.0", "scipy>=1.0" ]
+
+
 [tool.maturin]
 cargo-extra-args = ["--quiet"]
 features = ["pyo3/extension-module"]
@@ -19,11 +22,7 @@ python-source = "python"
 release = true
 strip = false
 
-dependencies = [
-    "numpy>=1.20",
-    "scikit-learn>=1.0",
-    "scipy>=1.0"
-]
+
 
 
 
