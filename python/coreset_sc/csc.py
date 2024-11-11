@@ -36,6 +36,10 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
         Whether to return the full labels of the graph after fitting.
         If False, only the coreset labels will be returned.
 
+    ignore_warnings : bool, default=False
+        Whether to ignore warnings about the Implicit Kernel matrix being indefinite.
+        Distances that do become negative will be clipped to zero.
+
     Attributes
     ----------
     """
