@@ -131,6 +131,8 @@ cause the kernel matrix to be indefinite.</p></li>
 If None, a default KMeans algorithm will be used.</p></li>
 <li><p><strong>full_labels</strong> (<em>bool</em><em>, </em><em>default=True</em>) – Whether to return the full labels of the graph after fitting.
 If False, only the coreset labels will be returned.</p></li>
+<li><p><strong>ignore_warnings</strong> (<em>bool</em><em>, </em><em>default=False</em>) – Whether to ignore warnings about the Implicit Kernel matrix being indefinite.
+Distances that do become negative will be clipped to zero.</p></li>
 </ul>
 </dd>
 </dl>
