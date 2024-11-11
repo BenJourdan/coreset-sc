@@ -46,7 +46,17 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#coresetspectralclustering">CoresetSpectralClustering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coreset_sc.gen_sbm"><code class="docutils literal notranslate"><span class="pre">gen_sbm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coresetspectralclustering">CoresetSpectralClustering</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.compute_conductances"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.compute_conductances()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.fit"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.fit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.fit_predict"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.fit_predict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.label_full_graph"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.label_full_graph()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -75,10 +85,128 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="api-reference">
-<h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
+  <section id="module-coreset_sc">
+<span id="api-reference"></span><h1>API Reference<a class="headerlink" href="#module-coreset_sc" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="coreset_sc.gen_sbm">
+<span class="sig-prename descclassname"><span class="pre">coreset_sc.</span></span><span class="sig-name descname"><span class="pre">gen_sbm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc.html#gen_sbm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.gen_sbm" title="Link to this definition"></a></dt>
+<dd><p>Generate an approximate sample from a Stochastic Block Model (SBM) graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>int</em>) – Number of nodes in each cluster.</p></li>
+<li><p><strong>k</strong> (<em>int</em>) – Number of clusters.</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Probability of an edge within the same cluster.</p></li>
+<li><p><strong>q</strong> (<em>float</em>) – Probability of an edge between different clusters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>adj_mat</strong> (<em>scipy.sparse.csr_matrix, shape = (n*k, n*k)</em>) – The symmetric adjacency matrix of the generated graph with self loops added.</p></li>
+<li><p><strong>labels</strong> (<em>numpy.ndarray, shape = (n*k,)</em>) – The ground truth cluster labels</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
 <section id="coresetspectralclustering">
 <h2>CoresetSpectralClustering<a class="headerlink" href="#coresetspectralclustering" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">coreset_sc.</span></span><span class="sig-name descname"><span class="pre">CoresetSpectralClustering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering" title="Link to this definition"></a></dt>
+<dd><p>Coreset Spectral Clustering</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_clusters</strong> (<em>int</em>) – Number of clusters to form.</p></li>
+<li><p><strong>coreset_ratio</strong> (<em>float</em><em>, </em><em>default=0.01</em>) – Ratio of the coreset size to the original data size.</p></li>
+<li><p><strong>k_over_sampling_factor</strong> (<em>float</em><em>, </em><em>default=2.0</em>) – The factor to oversample the number of clusters for the coreset
+seeding stage. Higher values will increase the “resolution” of the
+sampling distribution, but take longer to compute.</p></li>
+<li><p><strong>shift</strong> (<em>float</em><em>, </em><em>default=0.0</em>) – The shift to add to the implicit kernel matrix of the form K’ = K + shift*D^{-1}.
+This is useful for graphs with large edge weights relative to degree, which can
+cause the kernel matrix to be indefinite.</p></li>
+<li><p><strong>kmeans_alg</strong> (<em>sklearn.cluster.KMeans</em><em>, </em><em>default=None</em>) – The KMeans algorithm to use for clustering the coreset embeddings.
+If None, a default KMeans algorithm will be used.</p></li>
+<li><p><strong>full_labels</strong> (<em>bool</em><em>, </em><em>default=True</em>) – Whether to return the full labels of the graph after fitting.
+If False, only the coreset labels will be returned.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering.compute_conductances">
+<span class="sig-name descname"><span class="pre">compute_conductances</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering.compute_conductances"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering.compute_conductances" title="Link to this definition"></a></dt>
+<dd><p>Compute the conductance of the labelled graph after fitting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conductances</strong> – The conductance of each cluster</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray, shape = (num_clusters,)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adjacency_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering.fit" title="Link to this definition"></a></dt>
+<dd><p>Fit the coreset clustering algorithm on the sparse adjacency matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adjacency_matrix</strong> (<em>scipy.sparse.csr_matrix</em><em>, </em><em>shape =</em><em> (</em><em>n_samples</em><em>, </em><em>n_samples</em><em>)</em>) – The adjacency matrix of the graph. This must contain self loops
+for each node.</p></li>
+<li><p><strong>y</strong> (<em>Ignored</em>) – Not used, present here for API consistency by convention.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>self</strong> – Fitted estimator.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering.fit_predict">
+<span class="sig-name descname"><span class="pre">fit_predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adjacency_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering.fit_predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering.fit_predict" title="Link to this definition"></a></dt>
+<dd><p>Fit the coreset clustering algorithm on the sparse adjacency matrix
+and return the cluster assignments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adjacency_matrix</strong> (<em>scipy.sparse.csr_matrix</em><em>, </em><em>shape =</em><em> (</em><em>n_samples</em><em>, </em><em>n_samples</em><em>)</em>) – The adjacency matrix of the graph. This must contain self loops
+for each node.</p></li>
+<li><p><strong>y</strong> (<em>Ignored</em>) – Not used, present here for API consistency by convention.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>labels</strong> – Cluster assignments.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape = (n_samples,)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering.label_full_graph">
+<span class="sig-name descname"><span class="pre">label_full_graph</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering.label_full_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering.label_full_graph" title="Link to this definition"></a></dt>
+<dd><p>Label the full graph using the coreset labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>labels</strong> – Cluster assignments.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray, shape = (n_samples,)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 

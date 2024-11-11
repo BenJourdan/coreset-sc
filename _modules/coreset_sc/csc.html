@@ -1,0 +1,359 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>coreset_sc.csc &mdash; coreset-sc 0.01 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=6ca3c713"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            coreset-sc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">coreset-sc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../coreset_sc.html">coreset_sc</a></li>
+      <li class="breadcrumb-item active">coreset_sc.csc</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for coreset_sc.csc</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClusterMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">KMeans</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">coreset_sc</span><span class="p">,</span> <span class="n">utils</span>
+
+
+<div class="viewcode-block" id="CoresetSpectralClustering">
+<a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering">[docs]</a>
+<span class="k">class</span> <span class="nc">CoresetSpectralClustering</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClusterMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Coreset Spectral Clustering</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_clusters : int</span>
+<span class="sd">        Number of clusters to form.</span>
+
+<span class="sd">    coreset_ratio : float, default=0.01</span>
+<span class="sd">        Ratio of the coreset size to the original data size.</span>
+
+<span class="sd">    k_over_sampling_factor : float, default=2.0</span>
+<span class="sd">        The factor to oversample the number of clusters for the coreset</span>
+<span class="sd">        seeding stage. Higher values will increase the &quot;resolution&quot; of the</span>
+<span class="sd">        sampling distribution, but take longer to compute.</span>
+
+<span class="sd">    shift: float, default=0.0</span>
+<span class="sd">        The shift to add to the implicit kernel matrix of the form K&#39; = K + shift*D^{-1}.</span>
+<span class="sd">        This is useful for graphs with large edge weights relative to degree, which can</span>
+<span class="sd">        cause the kernel matrix to be indefinite.</span>
+
+<span class="sd">    kmeans_alg : sklearn.cluster.KMeans, default=None</span>
+<span class="sd">        The KMeans algorithm to use for clustering the coreset embeddings.</span>
+<span class="sd">        If None, a default KMeans algorithm will be used.</span>
+
+<span class="sd">    full_labels : bool, default=True</span>
+<span class="sd">        Whether to return the full labels of the graph after fitting.</span>
+<span class="sd">        If False, only the coreset labels will be returned.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_clusters</span><span class="p">,</span>
+        <span class="n">coreset_ratio</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+        <span class="n">k_over_sampling_factor</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+        <span class="n">shift</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">kmeans_alg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">full_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">ignore_warnings</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_clusters</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s2">&quot;Number of clusters must be an integer&quot;</span>
+        <span class="k">assert</span> <span class="n">num_clusters</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Number of clusters must be greater than 1&quot;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">coreset_ratio</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="s2">&quot;Coreset ratio must be a float&quot;</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">coreset_ratio</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">coreset_ratio</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+        <span class="p">),</span> <span class="s2">&quot;Coreset ratio must be in the range (0, 1)&quot;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">k_over_sampling_factor</span><span class="p">,</span> <span class="nb">float</span>
+        <span class="p">),</span> <span class="s2">&quot;k_over_sampling_factor must be a float&quot;</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">k_over_sampling_factor</span> <span class="o">&gt;=</span> <span class="mf">1.0</span>
+        <span class="p">),</span> <span class="s2">&quot;k_over_sampling_factor must be greater than 1.0&quot;</span>
+
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="s2">&quot;shift must be a float&quot;</span>
+        <span class="k">assert</span> <span class="n">shift</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;shift must be non-negative&quot;</span>
+        <span class="k">assert</span> <span class="n">full_labels</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="s2">&quot;full_labels must be a boolean&quot;</span>
+        <span class="k">assert</span> <span class="n">ignore_warnings</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="s2">&quot;ignore_warnings must be a boolean&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span> <span class="o">=</span> <span class="n">num_clusters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">=</span> <span class="n">coreset_ratio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k_over_sampling_factor</span> <span class="o">=</span> <span class="n">k_over_sampling_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">=</span> <span class="n">shift</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_labels</span> <span class="o">=</span> <span class="n">full_labels</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_alg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">kmeans_alg</span>
+            <span class="k">if</span> <span class="n">kmeans_alg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">num_clusters</span><span class="p">,</span> <span class="n">n_init</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_warnings</span> <span class="o">=</span> <span class="n">ignore_warnings</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indices_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nnz_per_row_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_size_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_indices_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_labels_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_weights_</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closest_cluster_distance_</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="CoresetSpectralClustering.fit">
+<a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.fit">[docs]</a>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit the coreset clustering algorithm on the sparse adjacency matrix.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        adjacency_matrix : scipy.sparse.csr_matrix, shape = (n_samples, n_samples)</span>
+<span class="sd">            The adjacency matrix of the graph. This must contain self loops</span>
+<span class="sd">            for each node.</span>
+
+<span class="sd">        y : Ignored</span>
+<span class="sd">            Not used, present here for API consistency by convention.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self : object</span>
+<span class="sd">            Fitted estimator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span>
+        <span class="p">),</span> <span class="s2">&quot;Adjacency matrix must be a scipy.sparse.csr_matrix&quot;</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">),</span> <span class="s2">&quot;Adjacency matrix must be square&quot;</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_over_sampling_factor</span> <span class="o">&lt;=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">),</span> <span class="s2">&quot;Number of clusters times the oversampling factor must be less than the number of samples&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_</span> <span class="o">=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Compute degree vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span> <span class="o">=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">A1</span>
+        <span class="c1"># decompose the adjacency matrix into its components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">convert_from_csr_matrix</span><span class="p">(</span>
+            <span class="n">adjacency_matrix</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nnz_per_row_</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+        <span class="n">rough_coreset_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_indices_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_weights_</span><span class="p">,</span> <span class="n">coreset_embeddings_</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">coreset_sc</span><span class="o">.</span><span class="n">coreset_embeddings</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_</span><span class="p">,</span>
+                <span class="n">rough_coreset_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">k_over_sampling_factor</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">indices_</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nnz_per_row_</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ignore_warnings</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_size_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_indices_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># run kmeans on the coreset embeddings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_alg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">coreset_embeddings_</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_labels_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_alg</span><span class="o">.</span><span class="n">labels_</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_labels</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="CoresetSpectralClustering.compute_conductances">
+<a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.compute_conductances">[docs]</a>
+    <span class="k">def</span> <span class="nf">compute_conductances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the conductance of the labelled graph after fitting.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        conductances : numpy.ndarray, shape = (num_clusters,)</span>
+<span class="sd">            The conductance of each cluster</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Labels must be computed before conductances&quot;</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Labels must be computed before conductances&quot;</span>
+        <span class="c1"># This also assumes all the other required attributes are set</span>
+
+        <span class="k">return</span> <span class="n">coreset_sc</span><span class="o">.</span><span class="n">compute_conductances</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indices_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nnz_per_row_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CoresetSpectralClustering.label_full_graph">
+<a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.label_full_graph">[docs]</a>
+    <span class="k">def</span> <span class="nf">label_full_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Label the full graph using the coreset labels.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        labels : numpy.ndarray, shape = (n_samples,)</span>
+<span class="sd">            Cluster assignments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">closest_cluster_distance_</span> <span class="o">=</span> <span class="n">coreset_sc</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indices_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nnz_per_row_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coreset_indices_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coreset_weights_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coreset_labels_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CoresetSpectralClustering.fit_predict">
+<a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.fit_predict">[docs]</a>
+    <span class="k">def</span> <span class="nf">fit_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit the coreset clustering algorithm on the sparse adjacency matrix</span>
+<span class="sd">        and return the cluster assignments.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        adjacency_matrix : scipy.sparse.csr_matrix, shape = (n_samples, n_samples)</span>
+<span class="sd">            The adjacency matrix of the graph. This must contain self loops</span>
+<span class="sd">            for each node.</span>
+
+<span class="sd">        y : Ignored</span>
+<span class="sd">            Not used, present here for API consistency by convention.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        labels : numpy.ndarray, shape = (n_samples,)</span>
+<span class="sd">            Cluster assignments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ben Jourdan.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
