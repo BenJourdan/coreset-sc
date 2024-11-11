@@ -108,12 +108,20 @@ jobs:
           echo "activate_venv=source venv/bin/activate" >> $GITHUB_ENV  # Store the activation command as output for later reuse
         shell: bash
 
-      # Step 4: Install dependencies for docs
+      # Step 4: Install dependencies (including maturin)
       - name: Install dependencies for docs
         run: |
-          ${{ env.activate_venv }}  # Use stored activation command
+          ${{ env.activate_venv }}
           pip install --upgrade pip
+          pip install maturin
           pip install -r requirements.txt
+        shell: bash
+
+      # Step 5: Build and install Rust library using Maturin (in release mode)
+      - name: Build and install Rust library
+        run: |
+          ${{ env.activate_venv }}
+          maturin develop --release
         shell: bash
 
       # Step 5: Build Sphinx documentation
