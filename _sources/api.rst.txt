@@ -1,13 +1,13 @@
 API Reference
 =============
 
+.. automodule:: coreset_sc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 CoresetSpectralClustering
---------------------------
+-------------------------
 
 .. autoclass:: coreset_sc.CoresetSpectralClustering
    :members:
-
-gen_sbm
--------
-
-.. autofunction:: coreset_sc.gen_sbm

@@ -14,4 +14,3 @@ coreset-sc documentation
    installation
    usage
    api
-   source/modules
