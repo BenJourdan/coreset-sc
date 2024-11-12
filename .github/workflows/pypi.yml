@@ -171,24 +171,7 @@ jobs:
         uses: actions/attest-build-provenance@v1
         with:
           subject-path: 'wheels-*/*'
-<<<<<<< HEAD
-      - name: List files in working directory
-        run: ls -la
-      - name: List files in working directory
-        run: ls ../
-      - name: List files in working directory
-        run: ls ../../
-=======
-      - name: get working dir
-        run: pwd
-      - name: get working dir
-        run: pwd ../
-      - name: get working dir
-        run: ls -lah ../
-      - name: get working dir
-        run: ls -lah .
 
->>>>>>> 36f1d6d (debugging CI issues)
       - name: Publish to PyPI
         if: "startsWith(github.ref, 'refs/tags/')"
         uses: PyO3/maturin-action@v1
