@@ -47,6 +47,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-usage">Advanced usage</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
@@ -80,7 +81,8 @@
 <h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
 <section id="basic-usage">
 <h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h2>
-<p>The following example demonstrates how to use <cite>coreset-sc</cite> to generate a graph using the stochastic block model (SBM) and perform spectral clustering with coreset sampling:</p>
+<p>The following example demonstrates how to use <a class="reference internal" href="api.html#coreset_sc.CoresetSpectralClustering" title="coreset_sc.CoresetSpectralClustering"><code class="xref py py-class docutils literal notranslate"><span class="pre">coreset_sc.CoresetSpectralClustering</span></code></a> to generate a graph using the stochastic block model (SBM) and perform spectral clustering with coreset sampling.
+Vertices are assumed to have self loops since edges represent similarity between vertices.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coreset_sc</span> <span class="kn">import</span> <span class="n">CoresetSpectralClustering</span><span class="p">,</span> <span class="n">gen_sbm</span>
 <span class="kn">from</span> <span class="nn">sklearn.metrics.cluster</span> <span class="kn">import</span> <span class="n">adjusted_rand_score</span>
 
@@ -103,6 +105,49 @@
 <span class="n">pred_labels</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">labels_</span>  <span class="c1"># get the full labels</span>
 
 <span class="c1"># Alternatively, label the full graph in one line:</span>
+<span class="n">pred_labels</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+<span class="n">ari</span> <span class="o">=</span> <span class="n">adjusted_rand_score</span><span class="p">(</span><span class="n">ground_truth_labels</span><span class="p">,</span> <span class="n">pred_labels</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adjusted Rand Index: </span><span class="si">{</span><span class="n">ari</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-usage">
+<h2>Advanced usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
+<p>There are additional parameters that can be set in the constructor of <a class="reference internal" href="api.html#coreset_sc.CoresetSpectralClustering" title="coreset_sc.CoresetSpectralClustering"><code class="xref py py-class docutils literal notranslate"><span class="pre">coreset_sc.CoresetSpectralClustering</span></code></a>.</p>
+<p>This example shows demostrates how to swap out Kmeans for MiniBatchKMeans, shift the implicit kernel matrix by
+a constant *D^{-1}, use a custom over sampling factor for seeding the coreset distribution,
+only cluster the coreset graph, and turn off warnings about negative kernel distances triggering clipping.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coreset_sc</span> <span class="kn">import</span> <span class="n">CoresetSpectralClustering</span><span class="p">,</span> <span class="n">gen_sbm</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics.cluster</span> <span class="kn">import</span> <span class="n">adjusted_rand_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">MiniBatchKMeans</span>
+
+<span class="c1"># Generate a graph from the stochastic block model</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mi">1000</span>            <span class="c1"># number of nodes per cluster</span>
+<span class="n">k</span> <span class="o">=</span> <span class="mi">50</span>              <span class="c1"># number of clusters</span>
+<span class="n">p</span> <span class="o">=</span> <span class="mf">0.5</span>             <span class="c1"># probability of an intra-cluster edge</span>
+<span class="n">q</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">k</span>   <span class="c1"># probability of an inter-cluster edge</span>
+
+<span class="c1"># A is a sparse scipy CSR matrix of a symmetric adjacency graph</span>
+<span class="n">A</span><span class="p">,</span> <span class="n">ground_truth_labels</span> <span class="o">=</span> <span class="n">gen_sbm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+
+<span class="n">coreset_ratio</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># fraction of the data to use for the coreset graph</span>
+
+<span class="n">csc</span> <span class="o">=</span> <span class="n">CoresetSpectralClustering</span><span class="p">(</span>
+   <span class="n">num_clusters</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+   <span class="n">coreset_ratio</span><span class="o">=</span><span class="n">coreset_ratio</span><span class="p">,</span>
+   <span class="n">k_over_sampling_factor</span><span class="o">=</span><span class="mf">5.0</span>  <span class="c1"># increase the number of samples for seeding the coreset distribution</span>
+   <span class="n">shift</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span> <span class="c1"># shift the implicit kernel matrix by  0.25* D^{-1}</span>
+   <span class="n">kmeans_alg</span><span class="o">=</span><span class="n">MiniBatchKMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">2048</span><span class="p">),</span>  <span class="c1"># use MiniBatchKMeans instead of KMeans,</span>
+   <span class="n">full_labels</span><span class="o">=</span><span class="kc">False</span> <span class="c1"># only cluster the coreset graph</span>
+   <span class="n">ignore_warnings</span><span class="o">=</span><span class="kc">True</span> <span class="c1"># turn off warnings about negative kernel distances triggering clipping</span>
+<span class="p">)</span>
+<span class="n">csc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>  <span class="c1"># sample, extract, and cluster the coreset graph.</span>
+<span class="n">coreset_labels</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">coreset_labels_</span>  <span class="c1"># get the coreset labels</span>
+<span class="n">csc</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">()</span>  <span class="c1"># label the rest of the graph given the coreset labels</span>
+<span class="n">pred_labels</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">labels_</span>  <span class="c1"># get the full labels</span>
+
+<span class="c1"># Alternatively, label the full graph in one line (ignores full_labels=False):</span>
 <span class="n">pred_labels</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
 <span class="n">ari</span> <span class="o">=</span> <span class="n">adjusted_rand_score</span><span class="p">(</span><span class="n">ground_truth_labels</span><span class="p">,</span> <span class="n">pred_labels</span><span class="p">)</span>
 

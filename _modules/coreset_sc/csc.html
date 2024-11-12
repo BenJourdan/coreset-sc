@@ -72,12 +72,57 @@
            <div itemprop="articleBody">
              
   <h1>Source code for coreset_sc.csc</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
 <span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClusterMixin</span>
 <span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">KMeans</span>
 
 <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">coreset_sc</span><span class="p">,</span> <span class="n">utils</span>
+
+
+<span class="k">def</span> <span class="nf">signless_laplacian_and_D_sparse</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">D</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">A1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="n">D</span><span class="p">)</span>
+    <span class="n">D_inv_half</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">D</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()))</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">D</span> <span class="o">-</span> <span class="n">A</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">D_inv_half</span> <span class="o">@</span> <span class="n">L</span> <span class="o">@</span> <span class="n">D_inv_half</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">N</span>
+    <span class="k">return</span> <span class="n">M</span><span class="p">,</span> <span class="n">D</span>
+
+
+<span class="k">def</span> <span class="nf">fast_spectral_cluster</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">kmeans_alg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># M is the signless laplacian: I - (1/2) * D^(-1/2) * A * D^(-1/2)</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">_l</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="n">k</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">_l</span><span class="p">))</span>
+
+    <span class="c1"># We know the top eigenvector of the normalised laplacian.</span>
+    <span class="c1"># It doesn&#39;t help with clustering, so we will project our power method to</span>
+    <span class="c1"># be orthogonal to it.</span>
+    <span class="n">top_eigvec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">D</span> <span class="o">@</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n</span><span class="p">,),</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">top_eigvec</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">norm</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">top_eigvec</span> <span class="o">/=</span> <span class="n">norm</span>
+
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">M</span> <span class="o">@</span> <span class="n">Y</span>
+
+        <span class="c1"># Project Y to be orthogonal to the top eigenvector</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">_l</span><span class="p">):</span>
+            <span class="n">Y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="n">top_eigvec</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span> <span class="o">@</span> <span class="n">Y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span> <span class="o">*</span> <span class="n">top_eigvec</span>
+
+    <span class="n">kmeans</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">kmeans_alg</span> <span class="k">if</span> <span class="n">kmeans_alg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">n_init</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">kmeans</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">kmeans</span><span class="o">.</span><span class="n">labels_</span>
 
 
 <div class="viewcode-block" id="CoresetSpectralClustering">
@@ -92,7 +137,9 @@
 <span class="sd">        Number of clusters to form.</span>
 
 <span class="sd">    coreset_ratio : float, default=0.01</span>
-<span class="sd">        Ratio of the coreset size to the original data size.</span>
+<span class="sd">        Ratio of the coreset size to the original data size. If set to 1.0,</span>
+<span class="sd">        coreset clustering will be skipped and the full graph will be clustered</span>
+<span class="sd">        directly.</span>
 
 <span class="sd">    k_over_sampling_factor : float, default=2.0</span>
 <span class="sd">        The factor to oversample the number of clusters for the coreset</span>
@@ -113,7 +160,7 @@
 <span class="sd">        If False, only the coreset labels will be returned.</span>
 
 <span class="sd">    ignore_warnings : bool, default=False</span>
-<span class="sd">        Whether to ignore warnings about the Implicit Kernel matrix being indefinite.</span>
+<span class="sd">        Whether to ignore warnings about the implicit Kernel matrix being indefinite.</span>
 <span class="sd">        Distances that do become negative will be clipped to zero.</span>
 
 <span class="sd">    Attributes</span>
@@ -131,25 +178,29 @@
         <span class="n">ignore_warnings</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_clusters</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s2">&quot;Number of clusters must be an integer&quot;</span>
-        <span class="k">assert</span> <span class="n">num_clusters</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Number of clusters must be greater than 1&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">num_clusters</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Number of clusters must be an integer&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_clusters</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Number of clusters must be greater than 1&quot;</span><span class="p">)</span>
 
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">coreset_ratio</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="s2">&quot;Coreset ratio must be a float&quot;</span>
-        <span class="k">assert</span> <span class="p">(</span>
-            <span class="n">coreset_ratio</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">coreset_ratio</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
-        <span class="p">),</span> <span class="s2">&quot;Coreset ratio must be in the range (0, 1)&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">coreset_ratio</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Coreset ratio must be a float&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">coreset_ratio</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Coreset ratio must be in the range (0, 1)&quot;</span><span class="p">)</span>
 
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
-            <span class="n">k_over_sampling_factor</span><span class="p">,</span> <span class="nb">float</span>
-        <span class="p">),</span> <span class="s2">&quot;k_over_sampling_factor must be a float&quot;</span>
-        <span class="k">assert</span> <span class="p">(</span>
-            <span class="n">k_over_sampling_factor</span> <span class="o">&gt;=</span> <span class="mf">1.0</span>
-        <span class="p">),</span> <span class="s2">&quot;k_over_sampling_factor must be greater than 1.0&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k_over_sampling_factor</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;k_over_sampling_factor must be a float&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">k_over_sampling_factor</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;k_over_sampling_factor must be greater than 1.0&quot;</span><span class="p">)</span>
 
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="s2">&quot;shift must be a float&quot;</span>
-        <span class="k">assert</span> <span class="n">shift</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;shift must be non-negative&quot;</span>
-        <span class="k">assert</span> <span class="n">full_labels</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="s2">&quot;full_labels must be a boolean&quot;</span>
-        <span class="k">assert</span> <span class="n">ignore_warnings</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="s2">&quot;ignore_warnings must be a boolean&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;shift must be a float&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">shift</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;shift must be non-negative&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">full_labels</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;full_labels must be a boolean&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ignore_warnings</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ignore_warnings must be a boolean&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span> <span class="o">=</span> <span class="n">num_clusters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">=</span> <span class="n">coreset_ratio</span>
@@ -199,15 +250,14 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Fitted estimator.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
-            <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span>
-        <span class="p">),</span> <span class="s2">&quot;Adjacency matrix must be a scipy.sparse.csr_matrix&quot;</span>
-        <span class="k">assert</span> <span class="p">(</span>
-            <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="p">),</span> <span class="s2">&quot;Adjacency matrix must be square&quot;</span>
-        <span class="k">assert</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_over_sampling_factor</span> <span class="o">&lt;=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="p">),</span> <span class="s2">&quot;Number of clusters times the oversampling factor must be less than the number of samples&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Adjacency matrix must be a scipy.sparse.csr_matrix&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Adjacency matrix must be square&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_over_sampling_factor</span> <span class="o">&gt;</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Number of clusters times the oversampling factor must be less than the number of samples&quot;</span>
+            <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n_</span> <span class="o">=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -218,6 +268,14 @@
             <span class="n">adjacency_matrix</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nnz_per_row_</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="c1"># If the coreset ratio is 1, we can skip the coreset stage</span>
+            <span class="n">M</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">signless_laplacian_and_D_sparse</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span> <span class="o">=</span> <span class="n">fast_spectral_cluster</span><span class="p">(</span>
+                <span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_alg</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span>
 
         <span class="n">rough_coreset_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_</span><span class="p">)</span>
 
@@ -244,7 +302,6 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_labels</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">()</span>
-
         <span class="k">return</span> <span class="bp">self</span></div>
 
 
@@ -259,8 +316,6 @@
 <span class="sd">        conductances : numpy.ndarray, shape = (num_clusters,)</span>
 <span class="sd">            The conductance of each cluster</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Labels must be computed before conductances&quot;</span>
 
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Labels must be computed before conductances&quot;</span>
         <span class="c1"># This also assumes all the other required attributes are set</span>
@@ -282,13 +337,15 @@
     <span class="k">def</span> <span class="nf">label_full_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Label the full graph using the coreset labels.</span>
+<span class="sd">        Skip this if the coreset ratio is 1.0.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        labels : numpy.ndarray, shape = (n_samples,)</span>
 <span class="sd">            Cluster assignments.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">closest_cluster_distance_</span> <span class="o">=</span> <span class="n">coreset_sc</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_</span><span class="p">,</span>
@@ -326,9 +383,12 @@
 <span class="sd">            Cluster assignments.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="c1"># If the coreset ratio is 1, we&#39;ve already labelled the full graph</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span></div>
 </div>
 
 </pre></div>

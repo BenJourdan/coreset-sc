@@ -120,7 +120,9 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>num_clusters</strong> (<em>int</em>) – Number of clusters to form.</p></li>
-<li><p><strong>coreset_ratio</strong> (<em>float</em><em>, </em><em>default=0.01</em>) – Ratio of the coreset size to the original data size.</p></li>
+<li><p><strong>coreset_ratio</strong> (<em>float</em><em>, </em><em>default=0.01</em>) – Ratio of the coreset size to the original data size. If set to 1.0,
+coreset clustering will be skipped and the full graph will be clustered
+directly.</p></li>
 <li><p><strong>k_over_sampling_factor</strong> (<em>float</em><em>, </em><em>default=2.0</em>) – The factor to oversample the number of clusters for the coreset
 seeding stage. Higher values will increase the “resolution” of the
 sampling distribution, but take longer to compute.</p></li>
@@ -131,7 +133,7 @@ cause the kernel matrix to be indefinite.</p></li>
 If None, a default KMeans algorithm will be used.</p></li>
 <li><p><strong>full_labels</strong> (<em>bool</em><em>, </em><em>default=True</em>) – Whether to return the full labels of the graph after fitting.
 If False, only the coreset labels will be returned.</p></li>
-<li><p><strong>ignore_warnings</strong> (<em>bool</em><em>, </em><em>default=False</em>) – Whether to ignore warnings about the Implicit Kernel matrix being indefinite.
+<li><p><strong>ignore_warnings</strong> (<em>bool</em><em>, </em><em>default=False</em>) – Whether to ignore warnings about the implicit Kernel matrix being indefinite.
 Distances that do become negative will be clipped to zero.</p></li>
 </ul>
 </dd>
@@ -196,7 +198,8 @@ for each node.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering.label_full_graph">
 <span class="sig-name descname"><span class="pre">label_full_graph</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering.label_full_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering.label_full_graph" title="Link to this definition"></a></dt>
-<dd><p>Label the full graph using the coreset labels.</p>
+<dd><p>Label the full graph using the coreset labels.
+Skip this if the coreset ratio is 1.0.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>labels</strong> – Cluster assignments.</p>
