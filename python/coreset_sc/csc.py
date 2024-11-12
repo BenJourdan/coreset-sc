@@ -1,9 +1,54 @@
+import math
+
 import numpy
 from scipy import sparse
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.cluster import KMeans
 
 from . import coreset_sc, utils
+
+
+def signless_laplacian_and_D_sparse(A, D=None):
+    n = A.shape[0]
+    if D is None:
+        D = sparse.diags(A.sum(axis=1).A1)
+    else:
+        D = sparse.diags(D)
+    D_inv_half = sparse.diags(1 / numpy.sqrt(D.diagonal()))
+    L = D - A
+    N = D_inv_half @ L @ D_inv_half
+    M = sparse.eye(n) - (0.5) * N
+    return M, D
+
+
+def fast_spectral_cluster(M, D, k: int, kmeans_alg=None):
+    # M is the signless laplacian: I - (1/2) * D^(-1/2) * A * D^(-1/2)
+
+    n = M.shape[0]
+    _l = min(k, math.ceil(math.log(k, 2)))
+    t = 10 * math.ceil(math.log(n / k, 2))
+    Y = numpy.random.normal(size=(n, _l))
+
+    # We know the top eigenvector of the normalised laplacian.
+    # It doesn't help with clustering, so we will project our power method to
+    # be orthogonal to it.
+    top_eigvec = numpy.sqrt(D @ numpy.full((n,), 1))
+    norm = numpy.linalg.norm(top_eigvec)
+    if norm > 0:
+        top_eigvec /= norm
+
+    for _ in range(t):
+        Y = M @ Y
+
+        # Project Y to be orthogonal to the top eigenvector
+        for i in range(_l):
+            Y[:, i] -= (top_eigvec.transpose() @ Y[:, i]) * top_eigvec
+
+    kmeans = (
+        kmeans_alg if kmeans_alg is not None else KMeans(n_clusters=k, n_init="auto")
+    )
+    kmeans.fit(Y)
+    return kmeans.labels_
 
 
 class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
@@ -16,7 +61,9 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
         Number of clusters to form.
 
     coreset_ratio : float, default=0.01
-        Ratio of the coreset size to the original data size.
+        Ratio of the coreset size to the original data size. If set to 1.0,
+        coreset clustering will be skipped and the full graph will be clustered
+        directly.
 
     k_over_sampling_factor : float, default=2.0
         The factor to oversample the number of clusters for the coreset
@@ -37,7 +84,7 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
         If False, only the coreset labels will be returned.
 
     ignore_warnings : bool, default=False
-        Whether to ignore warnings about the Implicit Kernel matrix being indefinite.
+        Whether to ignore warnings about the implicit Kernel matrix being indefinite.
         Distances that do become negative will be clipped to zero.
 
     Attributes
@@ -55,25 +102,29 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
         ignore_warnings=False,
     ):
 
-        assert isinstance(num_clusters, int), "Number of clusters must be an integer"
-        assert num_clusters > 1, "Number of clusters must be greater than 1"
+        if not isinstance(num_clusters, int):
+            raise TypeError("Number of clusters must be an integer")
+        if num_clusters <= 1:
+            raise ValueError("Number of clusters must be greater than 1")
 
-        assert isinstance(coreset_ratio, float), "Coreset ratio must be a float"
-        assert (
-            coreset_ratio > 0.0 and coreset_ratio < 1.0
-        ), "Coreset ratio must be in the range (0, 1)"
+        if not isinstance(coreset_ratio, float):
+            raise TypeError("Coreset ratio must be a float")
+        if not (0.0 < coreset_ratio <= 1.0):
+            raise ValueError("Coreset ratio must be in the range (0, 1)")
 
-        assert isinstance(
-            k_over_sampling_factor, float
-        ), "k_over_sampling_factor must be a float"
-        assert (
-            k_over_sampling_factor >= 1.0
-        ), "k_over_sampling_factor must be greater than 1.0"
+        if not isinstance(k_over_sampling_factor, float):
+            raise TypeError("k_over_sampling_factor must be a float")
+        if k_over_sampling_factor < 1.0:
+            raise ValueError("k_over_sampling_factor must be greater than 1.0")
 
-        assert isinstance(shift, float), "shift must be a float"
-        assert shift >= 0.0, "shift must be non-negative"
-        assert full_labels in [True, False], "full_labels must be a boolean"
-        assert ignore_warnings in [True, False], "ignore_warnings must be a boolean"
+        if not isinstance(shift, float):
+            raise TypeError("shift must be a float")
+        if shift < 0.0:
+            raise ValueError("shift must be non-negative")
+        if full_labels not in [True, False]:
+            raise TypeError("full_labels must be a boolean")
+        if ignore_warnings not in [True, False]:
+            raise TypeError("ignore_warnings must be a boolean")
 
         self.num_clusters = num_clusters
         self.coreset_ratio = coreset_ratio
@@ -121,15 +172,14 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
         self : object
             Fitted estimator.
         """
-        assert isinstance(
-            adjacency_matrix, sparse.csr_matrix
-        ), "Adjacency matrix must be a scipy.sparse.csr_matrix"
-        assert (
-            adjacency_matrix.shape[0] == adjacency_matrix.shape[1]
-        ), "Adjacency matrix must be square"
-        assert (
-            self.num_clusters * self.k_over_sampling_factor <= adjacency_matrix.shape[0]
-        ), "Number of clusters times the oversampling factor must be less than the number of samples"
+        if not isinstance(adjacency_matrix, sparse.csr_matrix):
+            raise TypeError("Adjacency matrix must be a scipy.sparse.csr_matrix")
+        if adjacency_matrix.shape[0] != adjacency_matrix.shape[1]:
+            raise ValueError("Adjacency matrix must be square")
+        if self.num_clusters * self.k_over_sampling_factor > adjacency_matrix.shape[0]:
+            raise ValueError(
+                "Number of clusters times the oversampling factor must be less than the number of samples"
+            )
 
         self.n_ = adjacency_matrix.shape[0]
 
@@ -140,6 +190,14 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
             adjacency_matrix
         )
         self.nnz_per_row_ = numpy.diff(self.indptr_).astype(numpy.uint64)
+
+        if self.coreset_ratio == 1.0:
+            # If the coreset ratio is 1, we can skip the coreset stage
+            M, D = signless_laplacian_and_D_sparse(adjacency_matrix, self.degrees_)
+            self.labels_ = fast_spectral_cluster(
+                M, D, self.num_clusters, self.kmeans_alg
+            )
+            return self
 
         rough_coreset_size = int(self.coreset_ratio * self.n_)
 
@@ -166,7 +224,6 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
 
         if self.full_labels:
             self.label_full_graph()
-
         return self
 
     def compute_conductances(self):
@@ -178,8 +235,6 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
         conductances : numpy.ndarray, shape = (num_clusters,)
             The conductance of each cluster
         """
-
-        assert self.labels_ is not None, "Labels must be computed before conductances"
 
         assert self.labels_ is not None, "Labels must be computed before conductances"
         # This also assumes all the other required attributes are set
@@ -198,13 +253,15 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
     def label_full_graph(self):
         """
         Label the full graph using the coreset labels.
+        Skip this if the coreset ratio is 1.0.
 
         Returns
         -------
         labels : numpy.ndarray, shape = (n_samples,)
             Cluster assignments.
         """
-
+        if self.coreset_ratio == 1.0:
+            return None
         self.labels_, self.closest_cluster_distance_ = coreset_sc.label_full_graph(
             self.num_clusters,
             self.n_,
@@ -239,6 +296,9 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
             Cluster assignments.
         """
         self.fit(adjacency_matrix)
-        self.label_full_graph()
-
-        return self.labels_
+        if self.coreset_ratio == 1.0:
+            # If the coreset ratio is 1, we've already labelled the full graph
+            return self.labels_
+        else:
+            self.label_full_graph()
+            return self.labels_

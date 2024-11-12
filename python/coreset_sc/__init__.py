@@ -39,14 +39,22 @@ def gen_sbm(n, k, p, q):
     labels : numpy.ndarray, shape = (n*k,)
         The ground truth cluster labels
     """
-    assert isinstance(n, int), "n must be an integer"
-    assert isinstance(k, int), "k must be an integer"
-    assert isinstance(p, float), "p must be a float"
-    assert isinstance(q, float), "q must be a float"
-    assert n > 0, "n must be greater than 0"
-    assert k > 0, "k must be greater than 0"
-    assert 0 <= p <= 1, "p must be between 0 and 1"
-    assert 0 <= q <= 1, "q must be between 0 and 1"
+    if not isinstance(n, int):
+        raise TypeError("n must be an integer")
+    if not isinstance(k, int):
+        raise TypeError("k must be an integer")
+    if not isinstance(p, float):
+        raise TypeError("p must be a float")
+    if not isinstance(q, float):
+        raise TypeError("q must be a float")
+    if n <= 0:
+        raise ValueError("n must be greater than 0")
+    if k <= 0:
+        raise ValueError("k must be greater than 0")
+    if not (0 <= p <= 1):
+        raise ValueError("p must be between 0 and 1")
+    if not (0 <= q <= 1):
+        raise ValueError("q must be between 0 and 1")
 
     size, data, indices, indptr, labels = coreset_sc.gen_sbm(n, k, p, q)
     adj_mat = utils.convert_to_csr_matrix(size, data, indptr, indices)
