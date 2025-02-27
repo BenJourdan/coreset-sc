@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Usage &mdash; coreset-sc 0.01 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
@@ -83,8 +83,8 @@
 <h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h2>
 <p>The following example demonstrates how to use <a class="reference internal" href="api.html#coreset_sc.CoresetSpectralClustering" title="coreset_sc.CoresetSpectralClustering"><code class="xref py py-class docutils literal notranslate"><span class="pre">coreset_sc.CoresetSpectralClustering</span></code></a> to generate a graph using the stochastic block model (SBM) and perform spectral clustering with coreset sampling.
 Vertices are assumed to have self loops since edges represent similarity between vertices.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coreset_sc</span> <span class="kn">import</span> <span class="n">CoresetSpectralClustering</span><span class="p">,</span> <span class="n">gen_sbm</span>
-<span class="kn">from</span> <span class="nn">sklearn.metrics.cluster</span> <span class="kn">import</span> <span class="n">adjusted_rand_score</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">coreset_sc</span><span class="w"> </span><span class="kn">import</span> <span class="n">CoresetSpectralClustering</span><span class="p">,</span> <span class="n">gen_sbm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">adjusted_rand_score</span>
 
 <span class="c1"># Generate a graph from the stochastic block model</span>
 <span class="n">n</span> <span class="o">=</span> <span class="mi">1000</span>            <span class="c1"># number of nodes per cluster</span>
@@ -118,9 +118,9 @@ Vertices are assumed to have self loops since edges represent similarity between
 <p>This example shows demostrates how to swap out Kmeans for MiniBatchKMeans, shift the implicit kernel matrix by
 a constant *D^{-1}, use a custom over sampling factor for seeding the coreset distribution,
 only cluster the coreset graph, and turn off warnings about negative kernel distances triggering clipping.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coreset_sc</span> <span class="kn">import</span> <span class="n">CoresetSpectralClustering</span><span class="p">,</span> <span class="n">gen_sbm</span>
-<span class="kn">from</span> <span class="nn">sklearn.metrics.cluster</span> <span class="kn">import</span> <span class="n">adjusted_rand_score</span>
-<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">MiniBatchKMeans</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">coreset_sc</span><span class="w"> </span><span class="kn">import</span> <span class="n">CoresetSpectralClustering</span><span class="p">,</span> <span class="n">gen_sbm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">adjusted_rand_score</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">MiniBatchKMeans</span>
 
 <span class="c1"># Generate a graph from the stochastic block model</span>
 <span class="n">n</span> <span class="o">=</span> <span class="mi">1000</span>            <span class="c1"># number of nodes per cluster</span>

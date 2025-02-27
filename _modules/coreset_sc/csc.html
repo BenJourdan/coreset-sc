@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>coreset_sc.csc &mdash; coreset-sc 0.01 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -72,17 +72,17 @@
            <div itemprop="articleBody">
              
   <h1>Source code for coreset_sc.csc</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">math</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
-<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClusterMixin</span>
-<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">KMeans</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClusterMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">KMeans</span>
 
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">coreset_sc</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">coreset_sc</span><span class="p">,</span> <span class="n">utils</span>
 
 
-<span class="k">def</span> <span class="nf">signless_laplacian_and_D_sparse</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">signless_laplacian_and_D_sparse</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">n</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">D</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">D</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">A1</span><span class="p">)</span>
@@ -95,7 +95,7 @@
     <span class="k">return</span> <span class="n">M</span><span class="p">,</span> <span class="n">D</span>
 
 
-<span class="k">def</span> <span class="nf">fast_spectral_cluster</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">kmeans_alg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fast_spectral_cluster</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">kmeans_alg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="c1"># M is the signless laplacian: I - (1/2) * D^(-1/2) * A * D^(-1/2)</span>
 
     <span class="n">n</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -127,7 +127,7 @@
 
 <div class="viewcode-block" id="CoresetSpectralClustering">
 <a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering">[docs]</a>
-<span class="k">class</span> <span class="nc">CoresetSpectralClustering</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClusterMixin</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CoresetSpectralClustering</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClusterMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Coreset Spectral Clustering</span>
 
@@ -167,7 +167,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">num_clusters</span><span class="p">,</span>
         <span class="n">coreset_ratio</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
@@ -232,7 +232,7 @@
 
 <div class="viewcode-block" id="CoresetSpectralClustering.fit">
 <a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.fit">[docs]</a>
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Fit the coreset clustering algorithm on the sparse adjacency matrix.</span>
 
@@ -307,7 +307,7 @@
 
 <div class="viewcode-block" id="CoresetSpectralClustering.compute_conductances">
 <a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.compute_conductances">[docs]</a>
-    <span class="k">def</span> <span class="nf">compute_conductances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_conductances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute the conductance of the labelled graph after fitting.</span>
 
@@ -334,7 +334,7 @@
 
 <div class="viewcode-block" id="CoresetSpectralClustering.label_full_graph">
 <a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.label_full_graph">[docs]</a>
-    <span class="k">def</span> <span class="nf">label_full_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">label_full_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Label the full graph using the coreset labels.</span>
 <span class="sd">        Skip this if the coreset ratio is 1.0.</span>
@@ -363,7 +363,7 @@
 
 <div class="viewcode-block" id="CoresetSpectralClustering.fit_predict">
 <a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.fit_predict">[docs]</a>
-    <span class="k">def</span> <span class="nf">fit_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Fit the coreset clustering algorithm on the sparse adjacency matrix</span>
 <span class="sd">        and return the cluster assignments.</span>
