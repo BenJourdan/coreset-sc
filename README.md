@@ -8,7 +8,7 @@ Combined with [recent work on fast spectral clustering](https://neurips.cc/virtu
 ![Coreset Spectral Clustering](csc.png)
 
 
-
+Installation: `pip install coreset-sc`
 
 Basic usage:
 ```python
