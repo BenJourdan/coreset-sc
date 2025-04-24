@@ -217,6 +217,6 @@ mod tests{
         let (coreset_indices, coreset_weights,_) = coreset_sampler.sample().unwrap();
         println!("{:?}", coreset_indices);
         println!("{:?}", coreset_weights);
-        panic!("stop");
+        // panic!("stop");
     }
 }

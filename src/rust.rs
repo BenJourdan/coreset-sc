@@ -506,7 +506,7 @@ mod tests {
         let coreset_embeddings = super::compute_coreset_embeddings(adj_mat.as_ref(), degree_vector.as_ref(), &coreset_indices, &coreset_weights, num_clusters, coreset_size,Some(0.0) ,&mut rng);
 
 
-        panic!();
+        // panic!();
     }
 
 

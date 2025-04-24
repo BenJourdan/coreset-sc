@@ -1,4 +1,4 @@
-use std::fmt::{Formatter, Debug};
+use std::fmt::{Debug, Formatter};
 use crate::coreset::common::*;
 use std::mem::MaybeUninit;
 
@@ -41,7 +41,7 @@ where T: Node
 
     pub fn get_shifted_node_index(&self, node_index: Index) -> Result<ShiftedIndex,Error>{
         let storage_size = self.storage.len();
-        let num_leaves = (storage_size + 1)/2;
+        let num_leaves = (storage_size + 1).div_ceil(2);
         let shift = num_leaves - 1;
         let shifted_node_index = node_index.0 + shift;
         match shifted_node_index < storage_size{
@@ -51,7 +51,7 @@ where T: Node
     }
     pub fn get_node_index(&self, shifted_node_index: ShiftedIndex) -> Result<Index, Error>{
         let storage_size = self.storage.len();
-        let num_leaves = (storage_size + 1)/2;
+        let num_leaves = (storage_size + 1).div_ceil(2);
         let shift = num_leaves - 1;
         let node_index = shifted_node_index.0 - shift;
         match node_index < num_leaves{
@@ -62,7 +62,7 @@ where T: Node
 
     pub fn rebuild_from_leaves(&mut self){
         let num_nodes = self.storage.len();
-        let num_leaves = (num_nodes + 1)/2;
+        let num_leaves = (num_nodes + 1).div_ceil(2);
         // Leaves are stored in the last num_leaves elements of the storage vector.
         // We proceed by updating the first num_leaves -1 elements in reverse order.
         (0..num_leaves-1).rev().for_each(|i|{

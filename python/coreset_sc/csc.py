@@ -181,6 +181,13 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
                 "Number of clusters times the oversampling factor must be less than the number of samples"
             )
 
+        # check that self loops are present:
+        if not numpy.all(adjacency_matrix.diagonal() > 0):
+            raise ValueError(
+                "Adjacency matrix must contain self loop weights for each node. "
+                "To set all self loops to 1 (recommended), use adjacency_matrix.setdiag(1)"
+            )
+
         self.n_ = adjacency_matrix.shape[0]
 
         # Compute degree vector

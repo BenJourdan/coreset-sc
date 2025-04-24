@@ -1,5 +1,8 @@
 # coreset-sc
-A minimal implementation of the Coreset Spectral Clustering (CSC) algorithm given in [this paper](https://openreview.net/pdf?id=1qgZXeMTTU).
+This repository provides an approximate spectral clustering algorithm that can scale far beyond the original algorithm, while still producing similar results.
+
+
+This repo contains a minimal implementation of the Coreset Spectral Clustering (CSC) algorithm given in [this paper](https://openreview.net/pdf?id=1qgZXeMTTU).
 
 The presented method repeatedly jumps across the equivalence between the normlised cut and weighted kernel k-means problems to apply coreset methods to spectral clustering.
 

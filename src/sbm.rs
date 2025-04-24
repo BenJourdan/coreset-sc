@@ -256,7 +256,7 @@ mod tests{
         let (adj_mat,_labels) = gen_sbm_with_self_loops(n,k,p,q);
         println!("total time: {:?}",t0.elapsed());
         println!("{:?} shape",adj_mat.shape());
-        panic!();
+        // panic!();
     }
 
 
