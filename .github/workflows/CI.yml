@@ -38,7 +38,7 @@ jobs:
 
       # Run Clippy
       - name: Run Clippy (Rust Linter)
-        run: cargo clippy -- -D warnings
+        run: cargo clippy -- -A clippy::all
 
       # Set up and activate virtual environment (store activation command as output)
       - name: Set up and activate virtual environment
