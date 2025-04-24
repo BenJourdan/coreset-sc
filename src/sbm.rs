@@ -1,7 +1,10 @@
+#![allow(clippy::deprecated)]
+
+use rand::seq::IteratorRandom;
 use sampling_tree::SimpleSamplingTree;
 use rand_distr::{Binomial,Distribution};
 use faer::sparse::{SparseRowMat, SymbolicSparseRowMat};
-use rand::{rngs::StdRng, seq::IteratorRandom, SeedableRng};
+use rand_old::{self, SeedableRng};
 // use aligned_vec::{AVec,avec};
 use rayon::prelude::*;
 
@@ -86,14 +89,15 @@ pub fn gen_sbm_with_self_loops(
 
 
     // Now we sample the number of inter-cluster edges across the whole graph at once:
+    let mut rng = rand_old::rngs::StdRng::from_entropy();
     (0..num_inter_cluster_edges).for_each(|_|{
         // sample first cluster index, store current contribution and temporarily set it to 0:
-        let cluster_i = cluster_sampling_tree.sample(&mut rand::thread_rng()).unwrap();
+        let cluster_i = cluster_sampling_tree.sample(&mut rng).unwrap();
         let cluster_i_temp_contrib = cluster_sampling_tree.get_contribution(cluster_i).unwrap();
         cluster_sampling_tree.update(cluster_i, 0).unwrap();
 
         // now sample the first vertex index and get its contribution:
-        let cluster_i_vertex = vertex_sampling_trees[cluster_i.0].sample(&mut rand::thread_rng()).unwrap();
+        let cluster_i_vertex = vertex_sampling_trees[cluster_i.0].sample(&mut rng).unwrap();
         let cluster_i_vertex_contribution = vertex_sampling_trees[cluster_i.0].get_contribution(cluster_i_vertex).unwrap();
 
         // Now get the existing neighbours of i, store their contributions and temporarily set them to 0
@@ -114,10 +118,10 @@ pub fn gen_sbm_with_self_loops(
         }).collect::<Vec<(usize,usize)>>();
 
         // Sample second cluster index, store current conribution.
-        let cluster_j = cluster_sampling_tree.sample(&mut rand::thread_rng()).unwrap();
+        let cluster_j = cluster_sampling_tree.sample(&mut rng).unwrap();
         let cluster_j_temp_contrib = cluster_sampling_tree.get_contribution(cluster_j).unwrap();
         // Now sample the vertex indices and get their contributions:
-        let cluster_j_vertex = vertex_sampling_trees[cluster_j.0].sample(&mut rand::thread_rng()).unwrap();
+        let cluster_j_vertex = vertex_sampling_trees[cluster_j.0].sample(&mut rng).unwrap();
         let cluster_j_vertex_contribution = vertex_sampling_trees[cluster_j.0].get_contribution(cluster_j_vertex).unwrap();
         // Now update the vertex tree contributions:
         vertex_sampling_trees[cluster_i.0].update(cluster_i_vertex, cluster_i_vertex_contribution-1).unwrap();
@@ -154,7 +158,7 @@ pub fn gen_sbm_with_self_loops(
 
     // First we sample the indices of the intra-cluster edges:
     let indices_per_cluster = (0..k).into_par_iter().map(|cluster_i|{
-        (0..((n*(n-1))/2)).choose_multiple(&mut StdRng::from_entropy(), num_intra_cluster_edges[cluster_i])
+        (0..((n*(n-1))/2)).choose_multiple(&mut rand::rng(), num_intra_cluster_edges[cluster_i])
     });
     // Now we shift the indices to the correct cluster and convert them to edge pairs.
     let shifted_indices_per_cluster = indices_per_cluster.into_par_iter().enumerate().map(

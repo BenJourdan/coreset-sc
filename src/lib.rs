@@ -13,6 +13,8 @@
 //! 3. A k-nn oracle that can be used to query the k-nearest neighbours of a point.
 //!     - The coreset will be computed lazily using the oracle.
 
+#![allow(clippy::deprecated)]
+
 mod coreset;
 use faer::ColRef;
 
@@ -69,7 +71,7 @@ pub fn construct_from_py<'py>(
 }
 
 
-
+#[allow(clippy::deprecated)]
 #[allow(non_snake_case)]
 #[pymodule]
 fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -96,9 +98,9 @@ fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
         let (adj_mat_faer, degrees_faer) = construct_from_py(n, &data, &indices, &indptr, &nnz_per_row, &degrees);
 
-        let (indices, weights) = coreset::old::old_coreset(adj_mat_faer, degrees_faer, clusters, coreset_size, &mut StdRng::from_entropy());
-        let indices_py = indices.into_pyarray_bound(py);
-        let weights_py = weights.into_pyarray_bound(py);
+        let (indices, weights) = coreset::old::old_coreset(adj_mat_faer, degrees_faer, clusters, coreset_size, &mut StdRng::from_os_rng());
+        let indices_py = indices.into_pyarray(py);
+        let weights_py = weights.into_pyarray(py);
         let tuple = PyTuple::new_bound(py, &[indices_py.to_object(py),weights_py.to_object(py)]);
         tuple
     }
@@ -123,7 +125,7 @@ fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
         let (adj_mat_faer, degrees_faer) = construct_from_py(n, &data, &indices, &indptr, &nnz_per_row, &degrees);
         let (indices, weights,numerical_warning) = default_coreset_sampler(
             adj_mat_faer, degrees_faer, (clusters as Float * k_over_sampling_factor) as usize,
-            coreset_size, Some(shift), StdRng::from_entropy()).unwrap();
+            coreset_size, Some(shift), StdRng::from_os_rng()).unwrap();
         if numerical_warning && !ignore_warnings{
             let user_warning = py.get_type_bound::<pyo3::exceptions::PyUserWarning>();
             pyo3::PyErr::warn_bound(
@@ -135,13 +137,13 @@ fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
         }
         let (indices,weights) = aggregate_coreset_weights(indices, weights);
         let coreset_size = indices.len();
-        let mut rng = StdRng::from_entropy();
+        let mut rng = StdRng::from_os_rng();
         let coreset_embeddings = compute_coreset_embeddings(adj_mat_faer.as_ref(), degrees_faer.as_ref(), &indices, &weights, clusters, coreset_size,Some(shift), &mut rng);
-        let coreset_embeddings = coreset_embeddings.as_ref().into_ndarray().to_owned();
-        let indices_py = indices.into_pyarray_bound(py);
-        let weights_py = weights.into_pyarray_bound(py);
-        let coreset_embeddings_py = coreset_embeddings.to_pyarray_bound(py);
-        let tuple = PyTuple::new_bound(py, &[indices_py.to_object(py),weights_py.to_object(py),coreset_embeddings_py.to_object(py)]);
+        let coreset_embeddings = coreset_embeddings.as_ref().into_ndarray();
+        let indices_py = indices.into_pyarray(py);
+        let weights_py = weights.into_pyarray(py);
+        let coreset_embeddings_py = coreset_embeddings.to_pyarray(py);
+        let tuple = PyTuple::new(py, &[indices_py.to_object(py),weights_py.to_object(py),coreset_embeddings_py.to_object(py)]).unwrap();
         tuple
     }
 
@@ -182,8 +184,8 @@ fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
             clusters,
             Some(shift),
         );
-        let labels_py = labels_and_distances2.0.into_pyarray_bound(py);
-        let distances_py = labels_and_distances2.1.into_pyarray_bound(py);
+        let labels_py = labels_and_distances2.0.into_pyarray(py);
+        let distances_py = labels_and_distances2.1.into_pyarray(py);
         let tuple = PyTuple::new_bound(py, &[labels_py.to_object(py),distances_py.to_object(py)]);
         tuple
     }
@@ -212,7 +214,7 @@ fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
             clusters,
         );
 
-        let conductances_py = conductances.into_pyarray_bound(py);
+        let conductances_py = conductances.into_pyarray(py);
         conductances_py
     }
 
@@ -232,10 +234,10 @@ fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
         assert!(row_size == n*k);
         assert!(col_size == n*k);
-        let data = data.into_pyarray_bound(py);
-        let indices = indices.into_pyarray_bound(py);
-        let indptr = indptr.into_pyarray_bound(py);
-        let labels = labels.into_pyarray_bound(py);
+        let data = data.into_pyarray(py);
+        let indices = indices.into_pyarray(py);
+        let indptr = indptr.into_pyarray(py);
+        let labels = labels.into_pyarray(py);
         let tuple = PyTuple::new_bound(py, &[
             (n*k).to_object(py),
             data.to_object(py),

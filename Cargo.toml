@@ -14,13 +14,14 @@ path = "src/lib.rs"
 
 [dependencies]
 ndarray = "0.16.1"
-rand =  "0.8.5"
-pyo3 = {version = "0.22.6", features = ["extension-module"]}
+rand =  "0.9.1"
+rand_old = {version = "0.8.5", package = "rand"}
+pyo3 = {version = "0.24.2", features = ["extension-module"]}
 faer = { version = "0.19.4", features = ["rayon"] }
-numpy = "0.22.1"
+numpy = "0.24.0"
 
 sampling-tree = "0.1.0"
-rand_distr = "0.4.3"
+rand_distr = "0.5.1"
 criterion = "0.5.1"
 rayon = "1.10.0"
 
@@ -41,7 +42,8 @@ incremental = true
 debug = true
 
 
-
+[lints.clippy]
+deprecated = "allow"
 
 
 [[bench]]

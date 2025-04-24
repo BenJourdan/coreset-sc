@@ -114,7 +114,7 @@ impl <'a,T> DefaultCoresetSampler<'a,T>
     fn sample_next_k(&mut self) -> Result<(),Error>{
         // Now we run k-means++ to sample the next k points (total k+1 points)
         // first we uniformly sample the first point and repair:
-        let uniform_sampled_index = Index(self.rng.gen_range(0..self.number_of_data_points));
+        let uniform_sampled_index = Index(self.rng.random_range(0..self.number_of_data_points));
         self.repair(uniform_sampled_index);
         // Now we sample the next k-1 points and repair:
         for i in 0..self.num_clusters-1{
@@ -203,13 +203,14 @@ mod tests{
         // display the kernel matrix nicely
         println!("{:?}", &adj_matrix.to_dense());
 
+
         let mut coreset_sampler = DefaultCoresetSampler::<unstable::TreeNode>::new(
             adj_matrix.as_ref(),
             degree_vector.as_ref(),
             2,
             3,
             Some(0.0),
-            rand::SeedableRng::from_rng(rand::rngs::StdRng::from_entropy()).unwrap()
+            rand::rngs::StdRng::from_rng(&mut rand::rng()),
         );
         println!("{:?}", &coreset_sampler);
 

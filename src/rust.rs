@@ -496,12 +496,12 @@ mod tests {
 
         let coreset_size = n*num_clusters/10;
 
-        let rng = StdRng::from_entropy();
+        let rng = StdRng::from_os_rng();
 
         let (coreset_indices, coreset_weights,warning) = default_coreset_sampler(adj_mat.as_ref(), degree_vector.as_ref(), 2*num_clusters, coreset_size,Some(0.0), rng).unwrap();
         let (coreset_indices,coreset_weights) = aggregate_coreset_weights(coreset_indices, coreset_weights);
         let coreset_size = coreset_indices.len();
-        let mut rng = StdRng::from_entropy();
+        let mut rng = StdRng::from_os_rng();
 
         let coreset_embeddings = super::compute_coreset_embeddings(adj_mat.as_ref(), degree_vector.as_ref(), &coreset_indices, &coreset_weights, num_clusters, coreset_size,Some(0.0) ,&mut rng);
 

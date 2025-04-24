@@ -179,7 +179,7 @@ impl Node for TreeNode{
                         return Err(Error::NumericalError)
                     }
 
-                    let sample = rng.gen_range(0.0..total_smoothed_contribution);
+                    let sample = rng.random_range(0.0..total_smoothed_contribution);
                     node = match sample <= left_node_smoothed_contribution.0{
                         true => {
                             prob *= left_node_smoothed_contribution.0/total_smoothed_contribution;
@@ -208,7 +208,7 @@ impl Node for TreeNode{
                         return Err(Error::NumericalError)
                     }
 
-                    let sample = rng.gen_range(0.0..total_smoothed_contribution);
+                    let sample = rng.random_range(0.0..total_smoothed_contribution);
                     node = match sample <= left_node_contribution.0{
                         true => {
                             prob *= left_node_contribution.0/total_smoothed_contribution;

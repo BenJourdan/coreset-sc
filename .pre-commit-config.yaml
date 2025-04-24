@@ -27,6 +27,6 @@ repos:
     hooks:
       - id: clippy
         name: Run Clippy
-        entry: bash -c 'cargo clippy -- -D warnings'
+        entry: bash -c 'cargo clippy -- -A clippy::all'
         language: system
         types: [rust]

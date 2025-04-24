@@ -39,7 +39,7 @@ pub fn old_coreset<'a>(
 
 
     // Select the first point uniformly at random
-    let mut index_to_add = rng.gen_range(0..n);
+    let mut index_to_add = rng.random_range(0..n);
     initial_coreset.push(index_to_add);
     initial_coreset_weight += W[index_to_add];
 
@@ -48,7 +48,7 @@ pub fn old_coreset<'a>(
     (0..num_clusters-1).for_each(|_|{
         // Sample the next point proportional to the distance to the initial coreset
         zipped!(&mut probs,&dist_2_to_new_index).for_each_with_index(|i,unzipped!(mut p,d)| *p = W[i]*d.read());
-        index_to_add = rng.sample(rand::distributions::WeightedIndex::new(probs.as_slice()).unwrap());
+        index_to_add = rng.sample(rand::distr::weighted::WeightedIndex::new(probs.as_slice()).unwrap());
         initial_coreset.push(index_to_add);
         initial_coreset_weight += W[index_to_add];
 
@@ -68,7 +68,7 @@ pub fn old_coreset<'a>(
 
 
     let (mut coreset,mut coreset_weights): (Vec<_>,Vec<_>) = (0..coreset_size).map(|_|{
-        let index = rng.sample(rand::distributions::WeightedIndex::new(coreset_dist.as_slice()).unwrap());
+        let index = rng.sample(rand::distr::weighted::WeightedIndex::new(coreset_dist.as_slice()).unwrap());
         let prob = coreset_dist[index];
         let weight = W[index]/(prob*coreset_size as Float);
         (index, weight)
