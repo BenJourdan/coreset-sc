@@ -259,6 +259,13 @@
                 <span class="s2">&quot;Number of clusters times the oversampling factor must be less than the number of samples&quot;</span>
             <span class="p">)</span>
 
+        <span class="c1"># check that self loops are present:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Adjacency matrix must contain self loop weights for each node. &quot;</span>
+                <span class="s2">&quot;To set all self loops to 1 (recommended), use adjacency_matrix.setdiag(1)&quot;</span>
+            <span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">n_</span> <span class="o">=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># Compute degree vector</span>
