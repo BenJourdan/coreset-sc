@@ -227,6 +227,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">coreset_labels_</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">coreset_weights_</span> <span class="o">=</span> <span class="kc">None</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_graph</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">closest_cluster_distance_</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -310,6 +312,120 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_labels</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">label_full_graph</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="CoresetSpectralClustering.get_coreset_graph">
+<a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.get_coreset_graph">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_coreset_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract a coreset graph from the adjacency matrix.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        adjacency_matrix : scipy.sparse.csr_matrix, shape = (n_samples, n_samples)</span>
+<span class="sd">            The adjacency matrix of the graph. This must contain self loops</span>
+<span class="sd">            for each node.</span>
+
+<span class="sd">        y : Ignored</span>
+<span class="sd">            Not used, present here for API consistency by convention.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self : object</span>
+<span class="sd">            Fitted estimator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Adjacency matrix must be a scipy.sparse.csr_matrix&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Adjacency matrix must be square&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_over_sampling_factor</span> <span class="o">&gt;</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Number of clusters times the oversampling factor must be less than the number of samples&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># check that self loops are present:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Adjacency matrix must contain self loop weights for each node. &quot;</span>
+                <span class="s2">&quot;To set all self loops to 1 (recommended), use adjacency_matrix.setdiag(1)&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_</span> <span class="o">=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Compute degree vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span> <span class="o">=</span> <span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">A1</span>
+        <span class="c1"># decompose the adjacency matrix into its components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">convert_from_csr_matrix</span><span class="p">(</span>
+            <span class="n">adjacency_matrix</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nnz_per_row_</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="c1"># If the coreset ratio is 1, we can skip the coreset stage</span>
+            <span class="n">M</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">signless_laplacian_and_D_sparse</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">labels_</span> <span class="o">=</span> <span class="n">fast_spectral_cluster</span><span class="p">(</span>
+                <span class="n">M</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_alg</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span>
+
+        <span class="n">rough_coreset_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coreset_ratio</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_</span><span class="p">)</span>
+
+        <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coreset_indices_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coreset_weights_</span><span class="p">,</span>
+            <span class="n">cg_inptr</span><span class="p">,</span>
+            <span class="n">cg_indices</span><span class="p">,</span>
+            <span class="n">cg_data</span><span class="p">,</span>
+            <span class="n">cg_nnz</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">coreset_sc</span><span class="o">.</span><span class="n">coreset_graph_no_embeddings</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_clusters</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_</span><span class="p">,</span>
+            <span class="n">rough_coreset_size</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">k_over_sampling_factor</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indices_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indptr_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nnz_per_row_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">degrees_</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ignore_warnings</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_size_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_indices_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Construct the coreset graph as a scipy.sparse.csr_matrix</span>
+        <span class="n">num_coreset_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_indices_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_graph</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">cg_data</span><span class="p">,</span> <span class="n">cg_indices</span><span class="p">,</span> <span class="n">cg_inptr</span><span class="p">),</span>
+            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">num_coreset_nodes</span><span class="p">,</span> <span class="n">num_coreset_nodes</span><span class="p">),</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_graph</span></div>
+
+
+<div class="viewcode-block" id="CoresetSpectralClustering.set_coreset_graph_labels">
+<a class="viewcode-back" href="../../api.html#coreset_sc.CoresetSpectralClustering.set_coreset_graph_labels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_coreset_graph_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Allow the user to set the coreset graph labels manually.</span>
+<span class="sd">        Must have constructed self.coreset_graph with</span>
+<span class="sd">        get_coreset_graph() first.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        labels : numpy.ndarray, shape = (num_coreset_nodes,)</span>
+<span class="sd">            Cluster assignments for the coreset graph.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Coreset graph must be constructed first using get_coreset_graph()&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreset_graph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Labels must have the same number of nodes as the coreset graph&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreset_labels_</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CoresetSpectralClustering.compute_conductances">

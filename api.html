@@ -52,7 +52,9 @@
 <li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.compute_conductances"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.compute_conductances()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.fit"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.fit()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.fit_predict"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.fit_predict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.get_coreset_graph"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.get_coreset_graph()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.label_full_graph"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.label_full_graph()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coreset_sc.CoresetSpectralClustering.set_coreset_graph_labels"><code class="docutils literal notranslate"><span class="pre">CoresetSpectralClustering.set_coreset_graph_labels()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -196,6 +198,27 @@ for each node.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering.get_coreset_graph">
+<span class="sig-name descname"><span class="pre">get_coreset_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adjacency_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering.get_coreset_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering.get_coreset_graph" title="Link to this definition"></a></dt>
+<dd><p>Extract a coreset graph from the adjacency matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adjacency_matrix</strong> (<em>scipy.sparse.csr_matrix</em><em>, </em><em>shape =</em><em> (</em><em>n_samples</em><em>, </em><em>n_samples</em><em>)</em>) – The adjacency matrix of the graph. This must contain self loops
+for each node.</p></li>
+<li><p><strong>y</strong> (<em>Ignored</em>) – Not used, present here for API consistency by convention.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>self</strong> – Fitted estimator.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering.label_full_graph">
 <span class="sig-name descname"><span class="pre">label_full_graph</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering.label_full_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering.label_full_graph" title="Link to this definition"></a></dt>
 <dd><p>Label the full graph using the coreset labels.
@@ -208,6 +231,16 @@ Skip this if the coreset ratio is 1.0.</p>
 <dd class="field-even"><p>numpy.ndarray, shape = (n_samples,)</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="coreset_sc.CoresetSpectralClustering.set_coreset_graph_labels">
+<span class="sig-name descname"><span class="pre">set_coreset_graph_labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">labels</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/coreset_sc/csc.html#CoresetSpectralClustering.set_coreset_graph_labels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coreset_sc.CoresetSpectralClustering.set_coreset_graph_labels" title="Link to this definition"></a></dt>
+<dd><p>Allow the user to set the coreset graph labels manually.
+Must have constructed self.coreset_graph with
+get_coreset_graph() first.
+:param labels: Cluster assignments for the coreset graph.
+:type labels: numpy.ndarray, shape = (num_coreset_nodes,)</p>
 </dd></dl>
 
 </dd></dl>
