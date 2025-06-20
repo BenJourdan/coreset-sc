@@ -22,6 +22,7 @@ use faer::ColRef;
 mod rust;
 use numpy::PyArray1;
 use numpy::ToPyArray;
+use pyo3::IntoPyObjectExt;
 use rust::*;
 mod sbm;
 
@@ -102,6 +103,59 @@ fn coreset_sc(m: &Bound<'_, PyModule>) -> PyResult<()> {
         let indices_py = indices.into_pyarray(py);
         let weights_py = weights.into_pyarray(py);
         let tuple = PyTuple::new_bound(py, &[indices_py.to_object(py),weights_py.to_object(py)]);
+        tuple
+    }
+
+
+    #[allow(clippy::too_many_arguments)]
+    #[pyfn(m)]
+    #[pyo3(name = "coreset_graph_no_embeddings")]
+    fn csc_no_embeddings_py<'py>(
+        py: Python<'py>,
+        clusters: usize,
+        n: usize,
+        coreset_size: usize,
+        k_over_sampling_factor: f64,
+        data: PyReadonlyArray1<'py, f64>,
+        indices: PyReadonlyArray1<'py, usize>,
+        indptr: PyReadonlyArray1<'py, usize>,
+        nnz_per_row: PyReadonlyArray1<'py, usize>,
+        degrees: PyReadonlyArray1<'py, f64>,
+        shift: f64,
+        ignore_warnings: bool,
+    ) -> Bound<'py, PyTuple>{
+        let (adj_mat_faer, degrees_faer) = construct_from_py(n, &data, &indices, &indptr, &nnz_per_row, &degrees);
+        let (indices, weights,numerical_warning) = default_coreset_sampler(
+            adj_mat_faer, degrees_faer, (clusters as Float * k_over_sampling_factor) as usize,
+            coreset_size, Some(shift), StdRng::from_os_rng()).unwrap();
+        if numerical_warning && !ignore_warnings{
+            let user_warning = py.get_type_bound::<pyo3::exceptions::PyUserWarning>();
+            pyo3::PyErr::warn_bound(
+                py,
+                &user_warning,
+                "Negative distance encountered while sampling coreset. If you are getting odd results, try increasing the shift parameter.",
+                0
+            ).unwrap();
+        }
+        let (coreset_indices,coreset_weights) = aggregate_coreset_weights(indices, weights);
+
+        let coreset_graph = extract_coreset_graph(adj_mat_faer, degrees_faer, &coreset_indices, &coreset_weights, Some(shift));
+        let (sparse_rep, data) = coreset_graph.into_parts();
+        let (_,_,indptr,nnz,indices) = sparse_rep.into_parts();
+
+        let coreset_indices_py = coreset_indices.into_pyarray(py);
+        let coreset_weights_py = coreset_weights.into_pyarray(py);
+        let indptr_py = indptr.into_pyarray(py);
+        let indices_py = indices.into_pyarray(py);
+        let data_py = data.into_pyarray(py);
+        let nnz_py = nnz.unwrap().into_pyarray(py);
+        let tuple = PyTuple::new(py, &[
+            coreset_indices_py.into_py_any(py).unwrap(),
+            coreset_weights_py.into_py_any(py).unwrap(),
+            indptr_py.into_py_any(py).unwrap(),
+            indices_py.into_py_any(py).unwrap(),
+            data_py.into_py_any(py).unwrap(),
+            nnz_py.into_py_any(py).unwrap(),]).unwrap();
         tuple
     }
 

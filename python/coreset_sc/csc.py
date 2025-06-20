@@ -151,6 +151,8 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
         self.coreset_labels_ = None
         self.coreset_weights_ = None
 
+        self.coreset_graph = None
+
         self.labels_ = None
         self.closest_cluster_distance_ = None
 
@@ -232,6 +234,114 @@ class CoresetSpectralClustering(BaseEstimator, ClusterMixin):
         if self.full_labels:
             self.label_full_graph()
         return self
+
+    def get_coreset_graph(self, adjacency_matrix, y=None):
+        """
+        Extract a coreset graph from the adjacency matrix.
+
+        Parameters
+        ----------
+        adjacency_matrix : scipy.sparse.csr_matrix, shape = (n_samples, n_samples)
+            The adjacency matrix of the graph. This must contain self loops
+            for each node.
+
+        y : Ignored
+            Not used, present here for API consistency by convention.
+
+        Returns
+        -------
+        self : object
+            Fitted estimator.
+        """
+        if not isinstance(adjacency_matrix, sparse.csr_matrix):
+            raise TypeError("Adjacency matrix must be a scipy.sparse.csr_matrix")
+        if adjacency_matrix.shape[0] != adjacency_matrix.shape[1]:
+            raise ValueError("Adjacency matrix must be square")
+        if self.num_clusters * self.k_over_sampling_factor > adjacency_matrix.shape[0]:
+            raise ValueError(
+                "Number of clusters times the oversampling factor must be less than the number of samples"
+            )
+
+        # check that self loops are present:
+        if not numpy.all(adjacency_matrix.diagonal() > 0):
+            raise ValueError(
+                "Adjacency matrix must contain self loop weights for each node. "
+                "To set all self loops to 1 (recommended), use adjacency_matrix.setdiag(1)"
+            )
+
+        self.n_ = adjacency_matrix.shape[0]
+
+        # Compute degree vector
+        self.degrees_ = adjacency_matrix.sum(axis=1).A1
+        # decompose the adjacency matrix into its components
+        self.data_, self.indices_, self.indptr_ = utils.convert_from_csr_matrix(
+            adjacency_matrix
+        )
+        self.nnz_per_row_ = numpy.diff(self.indptr_).astype(numpy.uint64)
+
+        if self.coreset_ratio == 1.0:
+            # If the coreset ratio is 1, we can skip the coreset stage
+            M, D = signless_laplacian_and_D_sparse(adjacency_matrix, self.degrees_)
+            self.labels_ = fast_spectral_cluster(
+                M, D, self.num_clusters, self.kmeans_alg
+            )
+            return self
+
+        rough_coreset_size = int(self.coreset_ratio * self.n_)
+
+        (
+            self.coreset_indices_,
+            self.coreset_weights_,
+            cg_inptr,
+            cg_indices,
+            cg_data,
+            cg_nnz,
+        ) = coreset_sc.coreset_graph_no_embeddings(
+            self.num_clusters,
+            self.n_,
+            rough_coreset_size,
+            self.k_over_sampling_factor,
+            self.data_,
+            self.indices_,
+            self.indptr_,
+            self.nnz_per_row_,
+            self.degrees_,
+            self.shift,
+            self.ignore_warnings,
+        )
+        self.coreset_size_ = self.coreset_indices_.shape[0]
+
+        # Construct the coreset graph as a scipy.sparse.csr_matrix
+        num_coreset_nodes = self.coreset_indices_.shape[0]
+        self.coreset_graph = sparse.csr_matrix(
+            (cg_data, cg_indices, cg_inptr),
+            shape=(num_coreset_nodes, num_coreset_nodes),
+            dtype=numpy.float64,
+        )
+
+        return self.coreset_graph
+
+    def set_coreset_graph_labels(self, labels):
+        """
+        Allow the user to set the coreset graph labels manually.
+        Must have constructed self.coreset_graph with
+        get_coreset_graph() first.
+        Parameters
+        ----------
+        labels : numpy.ndarray, shape = (num_coreset_nodes,)
+            Cluster assignments for the coreset graph.
+
+        """
+
+        if self.coreset_graph is None:
+            raise ValueError(
+                "Coreset graph must be constructed first using get_coreset_graph()"
+            )
+        if labels.shape[0] != self.coreset_graph.shape[0]:
+            raise ValueError(
+                "Labels must have the same number of nodes as the coreset graph"
+            )
+        self.coreset_labels_ = labels.astype(numpy.uint64)
 
     def compute_conductances(self):
         """

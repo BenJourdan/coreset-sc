@@ -1,7 +1,7 @@
 Usage
 =====
 
-Basic Usage
+Basic usage
 -----------
 
 The following example demonstrates how to use :class:`coreset_sc.CoresetSpectralClustering` to generate a graph using the stochastic block model (SBM) and perform spectral clustering with coreset sampling.
@@ -82,3 +82,48 @@ only cluster the coreset graph, and turn off warnings about negative kernel dist
    ari = adjusted_rand_score(ground_truth_labels, pred_labels)
 
    print(f"Adjusted Rand Index: {ari:.2f}")
+
+
+Custom coreset clustering algorithms
+------------------------------------
+The following snippet shows how to use a custom clustering algorithm
+for clustering the coreset graph.
+
+.. code-block:: python
+   from coreset_sc import CoresetSpectralClustering, gen_sbm
+   from sklearn.metrics.cluster import adjusted_rand_score
+   from sklearn.cluster import SpectralClustering
+
+   # Generate a graph from the stochastic block model
+   n = 1000            # number of nodes per cluster
+   k = 50              # number of clusters
+   p = 0.5             # probability of an intra-cluster edge
+   q = (1.0 / n) / k   # probability of an inter-cluster edge
+
+   # A is a sparse scipy CSR matrix of a symmetric adjacency graph
+   A, ground_truth_labels = gen_sbm(n, k, p, q)
+   coreset_ratio = 0.1  # fraction of the data to use for the coreset graph
+
+   csc = CoresetSpectralClustering(
+      num_clusters=k,  # required
+      coreset_ratio=coreset_ratio,
+      # Optional parameters:
+      k_over_sampling_factor=2.0,
+      shift=0.01,
+   )
+
+   coreset_graph = csc.get_coreset_graph(A)
+
+   sc = SpectralClustering(
+      n_clusters=k,
+      affinity='precomputed',
+      random_state=42,
+   )
+   coreset_labels = sc.fit_predict(coreset_graph)
+   csc.set_coreset_graph_labels(coreset_labels)
+
+   # Now label the full graph using the coreset labels
+   csc.label_full_graph()
+   pred_labels = csc.labels_
+   ari = adjusted_rand_score(ground_truth_labels, pred_labels)
+   print(ari)
